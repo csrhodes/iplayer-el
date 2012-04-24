@@ -60,7 +60,6 @@
   (interactive "p")
   (let ((keys (this-command-keys))
         (presets (mapcar (lambda (x) (cons (read-kbd-macro (car x)) (cdr x))) iplayer-presets)))
-    (message "%s" (this-command-keys))
     (cond
      ((= (length keys) 1)
       (let ((channel (cdr (assoc keys presets))))
