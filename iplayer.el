@@ -64,7 +64,9 @@
      ((= (length keys) 1)
       (let ((channel (cdr (assoc keys presets))))
         (if channel
-            (iplayer-channel (format "^%s$" channel))
+            (progn
+              (setq mode-line-process (format "[%s]" channel))
+              (iplayer-channel (format "^%s$" channel)))
           (error "no preset for key %s" keys)))))))
 
 (defun iplayer-channel (channel)
@@ -101,6 +103,7 @@
 
 (defun iplayer ()
   (interactive)
+  (setq mode-line-process nil)
   (display-iplayer-tree (get-iplayer-tree)))
 
 (provide 'iplayer)
