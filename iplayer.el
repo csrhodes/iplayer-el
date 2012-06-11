@@ -1,3 +1,66 @@
+(defvar iplayer-updating-cache-process nil)
+(defvar iplayer-updating-cache-sentinel-info nil)
+(defvar iplayer-updating-cache-sentinel-executing nil)
+
+(defun iplayer-updating-cache-sentinel (process event)
+  ;; FIXME: assumes that all went well
+  (let* ((iplayer-updating-cache-sentinel-executing t)
+         (info (reverse iplayer-updating-cache-sentinel-info)))
+    (setq iplayer-updating-cache-process nil
+          iplayer-updating-cache-sentinel-info nil)
+    (dolist (info info)
+      (let ((iplayer-command-frame (car info))
+            (iplayer-command-window (cadr info))
+            (iplayer-command-buffer (caddr info))
+            (keys (car (cdddr info))))
+        (when (and (frame-live-p iplayer-command-frame)
+                   (window-live-p iplayer-command-window)
+                   (buffer-live-p iplayer-command-buffer))
+          (let ((old-frame (selected-frame))
+                (old-window (selected-window))
+                (old-buffer (current-buffer)))
+            (let ((pre-command-hook
+                   (lambda ()
+                     (select-frame iplayer-command-frame)
+                     (select-window iplayer-command-window)
+                     (set-buffer iplayer-command-buffer)))
+                  (post-command-hook
+                   (lambda ()
+                     (select-window old-window)
+                     (select-frame old-frame)
+                     (set-buffer old-buffer))))
+              ;; KLUDGE: execute-kbd-macro executes a normal
+              ;; command-loop, whose first action is to select the
+              ;; current frame and window, which is why we contort
+              ;; things to select the frame/window/buffer we actually
+              ;; want in pre-command-hook.  I'm actually surprised
+              ;; that it works, but mine is not too much to reason
+              ;; why; lots of other ways to try to achieve this didn't
+              ;; in fact work.
+              (execute-kbd-macro keys))))))
+    (message "Done updating iPlayer cache")))
+
+(defmacro define-iplayer-command (name arglist &rest body)
+  (let (docstring interactive)
+    (when (stringp (car body))
+      (setq docstring (car body) body (cdr body)))
+    (when (and (consp (car body)) (eql (caar body) 'interactive))
+      (setq interactive (car body) body (cdr body)))
+    `(defun ,name ,arglist
+       ,@(when docstring (list docstring))
+       ,@(when interactive (list interactive))
+       (unless iplayer-updating-cache-process
+         (setq iplayer-updating-cache-process
+               (start-process "updating-iplayer" " *updating-iplayer*"
+                              "get-iplayer" "--type" "radio,tv" "-q"))
+         (set-process-sentinel iplayer-updating-cache-process
+                               'iplayer-updating-cache-sentinel)
+         (message "Updating iPlayer cache"))
+       (if iplayer-updating-cache-sentinel-executing
+           (progn ,@body)
+         (push (list (selected-frame) (selected-window) (current-buffer) (this-command-keys))
+               iplayer-updating-cache-sentinel-info)))))
+
 (defun get-iplayer-tree (&rest args)
   (with-temp-buffer
     (apply #'call-process "get-iplayer" nil t nil "--nocopyright" "--type" "radio,tv" "--tree" "--terse" args)
@@ -54,9 +117,15 @@
     ("%" . "BBC Radio 5 live")
     ("^" . "BBC 6 Music")
     ("&" . "BBC 7")
-    ("*" . "BBC Radio 4 Extra")))
+    ("*" . "BBC Radio 4 Extra"))
+  "Alist mapping keys to iPlayer channels.
 
-(defun iplayer-preset (&optional prefix)
+Used in the `iplayer-preset' command.")
+
+(define-iplayer-command iplayer-preset (&optional prefix)
+  "Switch display to a preset channel.
+
+The presets are defined in the variable `iplayer-presets'."
   (interactive "p")
   (let ((keys (this-command-keys))
         (presets (mapcar (lambda (x) (cons (read-kbd-macro (car x)) (cdr x))) iplayer-presets)))
@@ -101,7 +170,8 @@
   (use-local-map iplayer-mode-map)
   (setq major-mode 'iplayer-mode mode-name "iPlayer"))
 
-(defun iplayer ()
+(define-iplayer-command iplayer ()
+  "Start the emacs iPlayer interface."
   (interactive)
   (setq mode-line-process nil)
   (display-iplayer-tree (get-iplayer-tree)))
