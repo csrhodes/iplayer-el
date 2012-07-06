@@ -58,7 +58,7 @@
          (message "Updating iPlayer cache"))
        (if iplayer-updating-cache-sentinel-executing
            (progn ,@body)
-         (push (list (selected-frame) (selected-window) (current-buffer) (this-command-keys))
+         (push (list (selected-frame) (selected-window) (current-buffer) (this-command-keys-vector))
                iplayer-updating-cache-sentinel-info)))))
 
 (defun get-iplayer-tree (&rest args)
