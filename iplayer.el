@@ -23,12 +23,8 @@
                    (lambda ()
                      (select-frame iplayer-command-frame)
                      (select-window iplayer-command-window)
-                     (set-buffer iplayer-command-buffer)))
-                  (post-command-hook
-                   (lambda ()
-                     (select-window old-window)
-                     (select-frame old-frame)
-                     (set-buffer old-buffer))))
+                     (set-buffer iplayer-command-buffer)
+                     (setq pre-command-hook nil))))
               ;; KLUDGE: execute-kbd-macro executes a normal
               ;; command-loop, whose first action is to select the
               ;; current frame and window, which is why we contort
@@ -37,7 +33,11 @@
               ;; that it works, but mine is not too much to reason
               ;; why; lots of other ways to try to achieve this didn't
               ;; in fact work.
-              (execute-kbd-macro keys))))))
+              (execute-kbd-macro keys)
+              ;; KLUDGE: and then we restore old state
+              (select-window old-window)
+              (select-frame old-frame)
+              (set-buffer old-buffer))))))
     (message "Done updating iPlayer cache")))
 
 (defmacro define-iplayer-command (name arglist &rest body)
