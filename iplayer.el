@@ -152,6 +152,29 @@ The presets are defined in the variable `iplayer-presets'."
           (start-process "get-iplayer" " *get-iplayer*" "get-iplayer" "--get" (format "%s" id)))
       (message "no id at point"))))
 
+(defun iplayer-previous ()
+  (interactive)
+  (save-match-data
+    (outline-previous-heading)
+    (while (and (= (funcall outline-level) 1) (not (bobp)))
+      (outline-previous-heading)))
+  (hide-other)
+  (unless (bobp)
+    (save-excursion
+      (outline-up-heading 1 t)
+      (show-children))))
+
+(defun iplayer-next ()
+  (interactive)
+  (save-match-data
+    (outline-next-heading)
+    (while (and (= (funcall outline-level) 1) (not (eobp)))
+      (outline-next-heading)))
+  (hide-other)
+  (save-excursion
+    (outline-up-heading 1 t)
+    (show-children)))
+
 (defconst iplayer-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "0") 'iplayer)
@@ -160,6 +183,8 @@ The presets are defined in the variable `iplayer-presets'."
         (define-key map (read-kbd-macro (substring presets i (1+ i)))
           'iplayer-preset)))
     (define-key map (kbd "RET") 'iplayer-download)
+    (define-key map (kbd "j") 'iplayer-next)
+    (define-key map (kbd "k") 'iplayer-previous)
     map
     ))
 
