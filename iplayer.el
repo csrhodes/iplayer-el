@@ -228,6 +228,9 @@ The presets are defined in the variable `iplayer-presets'."
   (setq mode-line-process nil)
   (display-iplayer-tree (get-iplayer-tree)))
 
+;;;###autoload
+(autoload 'iplayer "iplayer" "Start the emacs iPlayer interface." t)
+
 
 (provide 'iplayer)
 ;;; iplayer.el ends here
