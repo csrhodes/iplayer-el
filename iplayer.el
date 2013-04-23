@@ -39,7 +39,8 @@
       (let ((iplayer-command-frame (car info))
             (iplayer-command-window (cadr info))
             (iplayer-command-buffer (caddr info))
-            (keys (car (cdddr info))))
+            (keys (car (cdddr info)))
+            (function (cadr (cdddr info))))
         (when (and (frame-live-p iplayer-command-frame)
                    (window-live-p iplayer-command-window)
                    (buffer-live-p iplayer-command-buffer))
@@ -60,7 +61,15 @@
               ;; that it works, but mine is not too much to reason
               ;; why; lots of other ways to try to achieve this didn't
               ;; in fact work.
-              (execute-kbd-macro keys)
+              (if (version< emacs-version "24")
+                  (execute-kbd-macro keys)
+                ;; KLUDGE: we store the function name, which is fine,
+                ;; but some of our functions need to know which
+                ;; keystrokes were used to invoke them, so we need to
+                ;; pass those along, so we need to make sure that all
+                ;; iplayer-functions accept an optional argument, argh
+                ;; argh argh.
+                (funcall function keys))
               ;; KLUDGE: and then we restore old state
               (select-window old-window)
               (select-frame old-frame)
@@ -85,7 +94,7 @@
          (message "Updating iPlayer cache"))
        (if iplayer-updating-cache-sentinel-executing
            (progn ,@body)
-         (push (list (selected-frame) (selected-window) (current-buffer) (this-command-keys-vector))
+         (push (list (selected-frame) (selected-window) (current-buffer) (this-command-keys-vector) ',name)
                iplayer-updating-cache-sentinel-info)))))
 
 (defun get-iplayer-tree (&rest args)
@@ -149,12 +158,12 @@
 
 Used in the `iplayer-preset' command.")
 
-(define-iplayer-command iplayer-preset (&optional prefix)
+(define-iplayer-command iplayer-preset (&optional keys)
   "Switch display to a preset channel.
 
 The presets are defined in the variable `iplayer-presets'."
-  (interactive "p")
-  (let ((keys (this-command-keys))
+  (interactive)
+  (let ((keys (or (and keys (concat keys)) (this-command-keys)))
         (presets (mapcar (lambda (x) (cons (read-kbd-macro (car x)) (cdr x))) iplayer-presets)))
     (cond
      ((= (length keys) 1)
@@ -222,7 +231,7 @@ The presets are defined in the variable `iplayer-presets'."
   (use-local-map iplayer-mode-map)
   (setq major-mode 'iplayer-mode mode-name "iPlayer"))
 
-(define-iplayer-command iplayer ()
+(define-iplayer-command iplayer (&optional keys)
   "Start the emacs iPlayer interface."
   (interactive)
   (setq mode-line-process nil)
@@ -230,7 +239,6 @@ The presets are defined in the variable `iplayer-presets'."
 
 ;;;###autoload
 (autoload 'iplayer "iplayer" "Start the emacs iPlayer interface." t)
-
 
 (provide 'iplayer)
 ;;; iplayer.el ends here
