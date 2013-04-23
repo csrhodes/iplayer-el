@@ -185,7 +185,7 @@ The presets are defined in the variable `iplayer-presets'."
           ;; should probably use a process filter instead to give us a
           ;; progress bar
           (message "downloading id %s" id)
-          (start-process "get-iplayer" " *get-iplayer*" "get-iplayer" "--get" (format "%s" id)))
+          (start-process "get-iplayer" " *get-iplayer*" "get-iplayer" "--modes=best" "--get" (format "%s" id)))
       (message "no id at point"))))
 
 (defun iplayer-previous ()
