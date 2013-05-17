@@ -47,34 +47,39 @@
           (let ((old-frame (selected-frame))
                 (old-window (selected-window))
                 (old-buffer (current-buffer)))
-            (let ((pre-command-hook
-                   (lambda ()
-                     (select-frame iplayer-command-frame)
-                     (select-window iplayer-command-window)
-                     (set-buffer iplayer-command-buffer)
-                     (setq pre-command-hook nil))))
-              ;; KLUDGE: execute-kbd-macro executes a normal
-              ;; command-loop, whose first action is to select the
-              ;; current frame and window, which is why we contort
-              ;; things to select the frame/window/buffer we actually
-              ;; want in pre-command-hook.  I'm actually surprised
-              ;; that it works, but mine is not too much to reason
-              ;; why; lots of other ways to try to achieve this didn't
-              ;; in fact work.
-              (if (version< emacs-version "24")
-                  (execute-kbd-macro keys)
-                ;; KLUDGE: we store the function name, which is fine,
-                ;; but some of our functions need to know which
-                ;; keystrokes were used to invoke them, so we need to
-                ;; pass those along, so we need to make sure that all
-                ;; iplayer-functions accept an optional argument, argh
-                ;; argh argh.
-                (funcall function keys))
-              ;; KLUDGE: and then we restore old state
-              (select-window old-window)
-              (select-frame old-frame)
-              (set-buffer old-buffer))))))
-    (message "Done updating iPlayer cache")))
+            (cond
+             ((version< emacs-version "24")
+              (let ((pre-command-hook
+                     (lambda ()
+                       (select-frame iplayer-command-frame)
+                       (select-window iplayer-command-window)
+                       (set-buffer iplayer-command-buffer)
+                       (setq pre-command-hook nil))))
+                ;; KLUDGE: execute-kbd-macro executes a normal
+                ;; command-loop, whose first action is to select the
+                ;; current frame and window, which is why we contort
+                ;; things to select the frame/window/buffer we actually
+                ;; want in pre-command-hook.  I'm actually surprised
+                ;; that it works, but mine is not too much to reason
+                ;; why; lots of other ways to try to achieve this didn't
+                ;; in fact work.
+                (execute-kbd-macro keys)
+                ;; KLUDGE: and then we restore old state
+                (select-window old-window)
+                (select-frame old-frame)
+                (set-buffer old-buffer)))
+             (t
+              ;; KLUDGE: we store the function name, which is fine,
+              ;; but some of our functions need to know which
+              ;; keystrokes were used to invoke them, so we need to
+              ;; pass those along, so we need to make sure that all
+              ;; iplayer-functions accept an optional argument, argh
+              ;; argh argh.
+              (with-selected-frame iplayer-command-frame
+                (with-current-buffer iplayer-command-buffer
+                  (with-selected-window iplayer-command-window
+                    (funcall function keys)))))))))
+      (message "Done updating iPlayer cache"))))
 
 (defmacro define-iplayer-command (name arglist &rest body)
   (let (docstring interactive)
