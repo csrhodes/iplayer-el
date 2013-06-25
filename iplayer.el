@@ -163,13 +163,19 @@
 
 Used in the `iplayer-preset' command.")
 
+(defun iplayer-frob-presets (presets)
+  (cond
+   ((version< emacs-version "24")
+    (mapcar (lambda (x) (cons (read-kbd-macro (car x)) (cdr x))) presets))
+   (t presets)))
+
 (define-iplayer-command iplayer-preset (&optional keys)
   "Switch display to a preset channel.
 
 The presets are defined in the variable `iplayer-presets'."
   (interactive)
   (let ((keys (or (and keys (concat keys)) (this-command-keys)))
-        (presets (mapcar (lambda (x) (cons (read-kbd-macro (car x)) (cdr x))) iplayer-presets)))
+        (presets (iplayer-frob-presets iplayer-presets)))
     (cond
      ((= (length keys) 1)
       (let ((channel (cdr (assoc keys presets))))
