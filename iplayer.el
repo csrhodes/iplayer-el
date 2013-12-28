@@ -25,6 +25,17 @@
 ;; convenient interface to BBC iPlayer.
 
 ;;; Code:
+
+(defgroup iplayer nil
+  "Browse and download BBC TV/radio shows."
+  :prefix "iplayer-"
+  :group 'applications)
+
+(defcustom iplayer-download-directory "~/iPlayer/"
+  "Directory into which shows will be downloaded."
+  :group 'iplayer
+  :type 'directory)
+
 (defvar iplayer-updating-cache-process nil)
 (defvar iplayer-updating-cache-sentinel-info nil)
 (defvar iplayer-updating-cache-sentinel-executing nil)
@@ -192,7 +203,7 @@ The presets are defined in the variable `iplayer-presets'."
   (interactive)
   (let ((id (get-text-property (point) 'iplayer-id)))
     (if id
-        (let ((default-directory "~/iPlayer/"))
+        (let ((default-directory iplayer-download-directory))
           ;; should probably use a process filter instead to give us a
           ;; progress bar
           (message "downloading id %s" id)
