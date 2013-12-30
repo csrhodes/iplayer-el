@@ -142,16 +142,18 @@
 
 (defun display-iplayer-tree (tree)
   (with-current-buffer (get-buffer-create "*iplayer*")
-    (delete-region (point-min) (point-max))
+    (let ((buffer-read-only nil))
+      (fundamental-mode)
+      (delete-region (point-min) (point-max))
+      (dolist (entry tree)
+        (let ((program (car entry))
+              (episodes (cdr entry)))
+          (insert (propertize (format "* %s\n" program) 'face 'outline-1))
+          (dolist (episode episodes)
+            (insert (propertize (format "** %s\n" (cdr episode))
+                                'face 'outline-2 'iplayer-id (car episode)))))))
     (iplayer-mode)
     (orgstruct-mode 1)
-    (dolist (entry tree)
-      (let ((program (car entry))
-            (episodes (cdr entry)))
-        (insert (propertize (format "* %s\n" program) 'face 'outline-1))
-        (dolist (episode episodes)
-          (insert (propertize (format "** %s\n" (cdr episode))
-                              'face 'outline-2 'iplayer-id (car episode))))))
     (org-overview)
     (goto-char (point-min)))
   (switch-to-buffer (get-buffer-create "*iplayer*")))
@@ -246,12 +248,9 @@ The presets are defined in the variable `iplayer-presets'."
     map
     ))
 
-(defun iplayer-mode ()
+(define-derived-mode iplayer-mode special-mode "iPlayer"
   "A major mode for the BBC's iPlayer.
-\\{iplayer-mode-map}"
-  (interactive)
-  (use-local-map iplayer-mode-map)
-  (setq major-mode 'iplayer-mode mode-name "iPlayer"))
+\\{iplayer-mode-map}")
 
 (define-iplayer-command iplayer (&optional keys)
   "Start the emacs iPlayer interface."
