@@ -155,7 +155,10 @@
     (iplayer-mode)
     (orgstruct-mode 1)
     (org-overview)
-    (goto-char (point-min)))
+    (goto-char (point-min))
+    (if iplayer-current-channel
+        (setq mode-line-process (format "[%s]" iplayer-current-channel))
+      (setq mode-line-process nil)))
   (switch-to-buffer (get-buffer-create "*iplayer*")))
 
 (defvar iplayer-presets
@@ -176,11 +179,20 @@
 
 Used in the `iplayer-preset' command.")
 
+(defcustom iplayer-startup-channel "BBC One"
+  "The channel to display at startup"
+  :type `(choice
+          ,@(mapcar (lambda (x) `(const ,(cdr x))) iplayer-presets)
+          (const :tag "Show all content" nil))
+  :group 'iplayer)
+
 (defun iplayer-frob-presets (presets)
   (cond
    ((version< emacs-version "24")
     (mapcar (lambda (x) (cons (read-kbd-macro (car x)) (cdr x))) presets))
    (t presets)))
+
+(defvar iplayer-current-channel nil)
 
 (define-iplayer-command iplayer-preset (&optional keys)
   "Switch display to a preset channel.
@@ -193,13 +205,19 @@ The presets are defined in the variable `iplayer-presets'."
      ((= (length keys) 1)
       (let ((channel (cdr (assoc keys presets))))
         (if channel
-            (progn
-              (setq mode-line-process (format "[%s]" channel))
-              (iplayer-channel (format "^%s$" channel)))
+            (iplayer-channel channel)
           (error "no preset for key %s" keys)))))))
 
 (defun iplayer-channel (channel)
-  (display-iplayer-tree (get-iplayer-tree "--channel" channel)))
+  (setq iplayer-current-channel channel)
+  (display-iplayer-tree (get-iplayer-tree "--channel" (format "^%s$" channel))))
+
+(define-iplayer-command iplayer-refresh (&optional keys)
+  "Refresh the current iPlayer channel display."
+  (interactive)
+  (if iplayer-current-channel
+      (iplayer-channel iplayer-current-channel)
+    (iplayer-show-all)))
 
 (defun iplayer-download ()
   (interactive)
@@ -237,14 +255,17 @@ The presets are defined in the variable `iplayer-presets'."
 
 (defconst iplayer-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "0") 'iplayer)
+    (define-key map (kbd "0") 'iplayer-show-all)
     (let ((presets "123456789!\"£$%^&*()"))
       (dotimes (i (length presets))
         (define-key map (read-kbd-macro (substring presets i (1+ i)))
           'iplayer-preset)))
     (define-key map (kbd "RET") 'iplayer-download)
+    (define-key map (kbd "g") 'iplayer-refresh)
     (define-key map (kbd "j") 'iplayer-next)
     (define-key map (kbd "k") 'iplayer-previous)
+    (define-key map (kbd "n") 'iplayer-next)
+    (define-key map (kbd "p") 'iplayer-previous)
     map
     ))
 
@@ -252,11 +273,18 @@ The presets are defined in the variable `iplayer-presets'."
   "A major mode for the BBC's iPlayer.
 \\{iplayer-mode-map}")
 
+(define-iplayer-command iplayer-show-all (&optional keys)
+  "Show all iPlayer entries."
+  (interactive)
+  (setq iplayer-current-channel nil)
+  (display-iplayer-tree (get-iplayer-tree)))
+
 (define-iplayer-command iplayer (&optional keys)
   "Start the emacs iPlayer interface."
   (interactive)
-  (setq mode-line-process nil)
-  (display-iplayer-tree (get-iplayer-tree)))
+  (if iplayer-startup-channel
+      (iplayer-channel iplayer-startup-channel)
+    (iplayer-show-all)))
 
 ;;;###autoload
 (autoload 'iplayer "iplayer" "Start the emacs iPlayer interface." t)
