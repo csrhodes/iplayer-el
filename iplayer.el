@@ -219,6 +219,45 @@ The presets are defined in the variable `iplayer-presets'."
       (iplayer-channel iplayer-current-channel)
     (iplayer-show-all)))
 
+(defun iplayer-download-process-filter (process string)
+  (cond
+   ((string-match "^Starting download" string)
+    (process-put process 'iplayer-state 'downloading)
+    (process-put process 'iplayer-progress 0.0))
+   ((and (eql (process-get process 'iplayer-state) 'downloading)
+         (string-match "(\\([0-9]\\{1,3\\}.[0-9]\\)%)$" string))
+    (process-put process 'iplayer-progress (string-to-number (match-string 1 string))))
+   ((string-match "Started writing to temp file" string)
+    (process-put process 'iplayer-state 'transcoding)
+    (process-put process 'iplayer-progress 0.0))
+   ((string-match " Progress: =*>?\\([0-9]\\{1,3\\}\\)%-*|" string)
+    (let ((idx (match-beginning 0)) (data (match-data)))
+      (while (string-match " Progress: =*>?\\([0-9]\\{1,3\\}\\)%-*|" string (match-end 0))
+        (setq idx (match-beginning 0))
+        (setq data (match-data)))
+      (set-match-data data)
+      (process-put process 'iplayer-progress (string-to-number (match-string 1 string)))))
+   (t (with-current-buffer (process-buffer process)
+        (newline)
+        (insert string)
+        (newline))))
+  (with-current-buffer (get-buffer-create "*iplayer-progress*")
+    (goto-char (point-min))
+    (let ((found
+           (re-search-forward (format "^%s:" (process-get process 'iplayer-id)) nil 'end)))
+      (unless found
+        (unless (= (point) (progn (forward-line 0) (point)))
+          (goto-char (point-max))
+          (newline)))
+      (forward-line 0)
+      (let ((beg (point)))
+        (end-of-line)
+        (delete-region beg (point)))
+      (insert (format "%s: %s %s%%"
+                      (process-get process 'iplayer-id)
+                      (process-get process 'iplayer-state)
+                      (process-get process 'iplayer-progress))))))
+
 (defun iplayer-download ()
   (interactive)
   (let ((id (get-text-property (point) 'iplayer-id)))
@@ -227,7 +266,11 @@ The presets are defined in the variable `iplayer-presets'."
           ;; should probably use a process filter instead to give us a
           ;; progress bar
           (message "downloading id %s" id)
-          (start-process "get-iplayer" " *get-iplayer*" "get-iplayer" "--modes=best" "--get" (format "%s" id)))
+          (let ((process
+                 (start-process "get-iplayer" " *get-iplayer*" "get-iplayer" "--modes=best" "--get" (format "%s" id))))
+            (process-put process 'iplayer-id id)
+            (set-process-filter process 'iplayer-download-process-filter)
+            (display-buffer (get-buffer-create "*iplayer-progress*"))))
       (message "no id at point"))))
 
 (defun iplayer-previous ()
