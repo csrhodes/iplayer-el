@@ -1,6 +1,6 @@
 ;;; iplayer.el --- Browse and download BBC TV/radio shows
 
-;; Copyright (C) 2012-2013  Christophe Rhodes
+;; Copyright (C) 2012-2014  Christophe Rhodes
 
 ;; Author: Christophe Rhodes <csr21@cantab.net>
 ;; Version: 0.1
