@@ -226,17 +226,20 @@ The presets are defined in the variable `iplayer-presets'."
         (state (process-get process 'iplayer-state))
         (progress (process-get process 'iplayer-progress)))
     (with-current-buffer (get-buffer-create "*iplayer-progress*")
-      (goto-char (point-min))
-      (let ((found (re-search-forward (format "^%s:" id) nil 'end)))
-        (unless found
-          (unless (= (point) (progn (forward-line 0) (point)))
-            (goto-char (point-max))
-            (newline)))
-        (forward-line 0)
-        (let ((beg (point)))
-          (end-of-line)
-          (delete-region beg (point)))
-        (insert (format "%s: %s %s%%" id state progress))))))
+      (special-mode)
+      (save-excursion
+        (goto-char (point-min))
+        (let ((found (re-search-forward (format "^%s:" id) nil 'end))
+              (inhibit-read-only t))
+          (unless found
+            (unless (= (point) (progn (forward-line 0) (point)))
+              (goto-char (point-max))
+              (newline)))
+          (forward-line 0)
+          (let ((beg (point)))
+            (end-of-line)
+            (delete-region beg (point)))
+          (insert (format "%s: %s %s%%" id state progress)))))))
 
 (defun iplayer-download-process-filter (process string)
   (catch 'no-progress
