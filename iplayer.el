@@ -166,6 +166,8 @@
     ("2" . "BBC Two")
     ("3" . "BBC Three")
     ("4" . "BBC Four")
+    ("8" . "CBBC")
+    ("9" . "CBeebies")
 
     ("!" . "BBC Radio 1")
     ("\"" . "BBC Radio 2")
