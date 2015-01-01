@@ -1,10 +1,11 @@
 ;;; iplayer.el --- Browse and download BBC TV/radio shows
 
-;; Copyright (C) 2012-2014  Christophe Rhodes
+;; Copyright (C) 2012-2015  Christophe Rhodes
 
 ;; Author: Christophe Rhodes <csr21@cantab.net>
+;; URL: https://github.com/csrhodes/iplayer-el
 ;; Version: 0.1
-;; Keywords: multimedia
+;; Keywords: multimedia, bbc
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
