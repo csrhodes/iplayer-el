@@ -213,7 +213,7 @@ The presets are defined in the variable `iplayer-presets'."
 
 (defun iplayer-channel (channel)
   (setq iplayer-current-channel channel)
-  (display-iplayer-tree (get-iplayer-tree "--channel" (format "^%s$" channel))))
+  (display-iplayer-tree (get-iplayer-tree "--channel" (format "^%s( England| Scotland| Northern Ireland| Wales)?$" channel))))
 
 (define-iplayer-command iplayer-refresh (&optional keys)
   "Refresh the current iPlayer channel display."
