@@ -280,16 +280,20 @@ The presets are defined in the variable `iplayer-presets'."
     (process-put process 'iplayer-state 'failed)))
   (iplayer-download-display-state process))
 
-(defun iplayer-download ()
-  (interactive)
-  (let ((id (get-text-property (point) 'iplayer-id)))
+(defun iplayer-download (mode)
+  (interactive "p")
+  (let ((id (get-text-property (point) 'iplayer-id))
+        (mode (case mode
+                (1 "default")
+                (4 "good")
+                (t "best"))))
     (if id
         (let ((default-directory iplayer-download-directory))
           ;; should probably use a process filter instead to give us a
           ;; progress bar
           (message "downloading id %s" id)
           (let ((process
-                 (start-process "get-iplayer" " *get-iplayer*" "get-iplayer" "--modes=best" "--get" (format "%s" id))))
+                 (start-process "get-iplayer" " *get-iplayer*" "get-iplayer" (format  "--modes=%s" mode) "--force" "--get" (format "%s" id))))
             (process-put process 'iplayer-id id)
             (process-put process 'iplayer-state 'connecting)
             (process-put process 'iplayer-progress 0.0)
